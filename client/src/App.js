@@ -1,75 +1,51 @@
 import React, { useEffect, useState } from "react";
-import detectEthereumProvider from "@metamask/detect-provider";
-// var contract = require("@truffle/contract");
-
 import "./App.css";
+import Web3 from "web3";
+import SimpleStorageContract from "./contracts/SimpleStorage.json";
 
 function App() {
-  const [storageValue, setStorageValue] = useState(0);
-  const [web3, setWeb3] = useState(null);
-  const [accounts, setAccounts] = useState(null);
+  const [currentAccount, setCurrentAccount] = useState(null);
   const [contract, setContract] = useState(null);
-  
+  const [storageValue, setStorageValue] = useState(0);
 
+  let ethereum = window.ethereum;
+
+  //Initializing web3 object
+  let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
   useEffect(() => {
-    const initializeWeb3 = async () => {
-      const startApp = (provider) => {
-        if (provider !== window.ethereum) {
-          console.error("Do you have multiple wallets installed?");
-        }
-        console.log("START DAPP, currently DAPP does nothing");
-      };
-
-      //Get network provider and web3 instance
-      const provider = await detectEthereumProvider();
-      if (provider) {
-        console.log(provider);
-        console.log("provider, metamask is detected");
-        startApp(provider); // Initialize your app
-      } else {
-        console.log("Please install MetaMask!");
-      }
-
-      let currentAccount = null;
-      window.ethereum
-        .request({ method: "eth_accounts" })
-        .then(handleAccountsChanged)
-        .catch((err) => {
-          console.error(err);
-        });
-
-      window.ethereum.on("accountsChanged", handleAccountsChanged);
-
-      function handleAccountsChanged(accounts) {
-        if (accounts.length === 0) {
-          console.log("Please connect to MetaMask.");
-        } else if (accounts[0] !== currentAccount) {
-          currentAccount = accounts[0];
-          const showAccount = document.querySelector(".showAccount");
-          showAccount.innerHTML = currentAccount;
-        }
-      }
-    };
-
-    const runExample = async () => {
-      const { accounts, contract } = this.state;
-
-      // Stores a given value, 5 by default.
-      await contract.methods.set(5).send({ from: accounts[0] });
-
-      // Get the value from the contract to prove it worked.
-      const response = await contract.methods.get().call();
-
-      // Update state with the result.
-      this.setState({ storageValue: response });
-    };
-
-    // runExample();
     initializeWeb3();
-  });
+    runExample();
+  }, []);
 
-  //declare a runExample function that is asynchronous
-  // const runExample = async () => {};
+  const initializeWeb3 = async () => {
+    //get account
+    // const accounts = await ethereum.request({ method: 'eth_accounts' });
+    // console.log('this is the metamask account' + accounts);
+    web3.eth.getAccounts().then((props) => {
+      console.log(props);
+      setCurrentAccount(props[0]);
+      console.log("the first metamask account is " + currentAccount);
+    });
+
+    //get network
+    const networkType = await web3.eth.net.getNetworkType();
+    console.log("network type is " + networkType);
+
+    //init contract
+    const networkId = await web3.eth.net.getId();
+    const deployedNetwork = SimpleStorageContract.networks[networkId];
+    const instance = new web3.eth.Contract(
+      SimpleStorageContract.abi,
+      deployedNetwork && deployedNetwork.address
+    );
+    setContract(instance);
+  };
+
+  const runExample = async () => {
+    await contract.methods.set(5).send({ from: currentAccount });
+    setStorageValue(await contract.methods.get().call());
+    console.log("this is the storageValue " + storageValue);
+  };
 
   return (
     <React.Fragment>
@@ -77,7 +53,7 @@ function App() {
         <header className="App-header">
           Creating my first FULL STACK DAPP
           <h2>
-            Account: <span className="showAccount"></span>
+            Account: <span className="showAccount">{currentAccount}</span>
           </h2>
         </header>
       </div>
