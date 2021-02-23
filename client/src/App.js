@@ -8,13 +8,12 @@ function App() {
   const [contract, setContract] = useState(null);
   const [storageValue, setStorageValue] = useState(0);
 
-  let ethereum = window.ethereum;
-
   //Initializing web3 object
   let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
   useEffect(() => {
     initializeWeb3();
-    runExample();
+    //does not work if i let runExample() run
+    // runExample();
   }, []);
 
   const initializeWeb3 = async () => {

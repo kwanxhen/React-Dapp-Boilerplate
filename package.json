@@ -11,5 +11,8 @@
     "start": "node server.js"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@truffle/contract": "^4.3.8"
+  }
 }
