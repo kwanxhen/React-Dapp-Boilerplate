@@ -1,49 +1,72 @@
 import React, { useEffect, useState } from "react";
-import "./App.css";
 import Web3 from "web3";
+import "./App.css";
 import SimpleStorageContract from "./contracts/SimpleStorage.json";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
   const [contract, setContract] = useState(null);
+  const [networkType, setNetworkType] = useState(null);
   const [storageValue, setStorageValue] = useState(0);
 
   //Initializing web3 object
   let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
-  useEffect(() => {
-    initializeWeb3();
-    //does not work if i let runExample() run
-    // runExample();
-  }, []);
+  console.log("this is Web3 givenProvider", Web3.givenProvider);
 
-  const initializeWeb3 = async () => {
-    //get account
-    // const accounts = await ethereum.request({ method: 'eth_accounts' });
-    // console.log('this is the metamask account' + accounts);
-    web3.eth.getAccounts().then((props) => {
-      console.log(props);
-      setCurrentAccount(props[0]);
-      console.log("the first metamask account is " + currentAccount);
+  useEffect(() => {
+    getAccount().then((value) => {
+      setCurrentAccount(value[0]);
     });
 
-    //get network
-    const networkType = await web3.eth.net.getNetworkType();
-    console.log("network type is " + networkType);
+    getNetworkType().then((value) => {
+      setNetworkType(value);
+    });
 
-    //init contract
-    const networkId = await web3.eth.net.getId();
-    const deployedNetwork = SimpleStorageContract.networks[networkId];
-    const instance = new web3.eth.Contract(
-      SimpleStorageContract.abi,
-      deployedNetwork && deployedNetwork.address
-    );
-    setContract(instance);
+    getContractInstance().then((value) => {
+      setContract(value.methods);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (currentAccount && contract) {
+      contract
+        .set(13)
+        .send({ from: currentAccount })
+        .then((value) => setStorageValue(value.transactionHash));
+    }
+  }, [currentAccount, contract]);
+
+  useEffect(() => {
+    if (currentAccount && contract) {
+      contract
+      .get()
+      .call({ from: currentAccount })
+      .then((value) => {
+        console.log(value);
+      });
+    }
+  }, [storageValue]);
+
+  const getAccount = async () => {
+    const tempAccount = await web3.eth.getAccounts();
+    return tempAccount;
   };
 
-  const runExample = async () => {
-    await contract.methods.set(5).send({ from: currentAccount });
-    setStorageValue(await contract.methods.get().call());
-    console.log("this is the storageValue " + storageValue);
+  const getNetworkType = async () => {
+    const tempNetworkType = await web3.eth.net.getNetworkType();
+    return tempNetworkType;
+  };
+
+  const getContractInstance = async () => {
+    const tempReturnValue = await web3.eth.net.getId();
+    const deployedNetwork = await SimpleStorageContract.networks[
+      tempReturnValue
+    ];
+    const instance = await new web3.eth.Contract(
+      SimpleStorageContract.abi,
+      deployedNetwork.address
+    );
+    return instance;
   };
 
   return (
@@ -54,6 +77,7 @@ function App() {
           <h2>
             Account: <span className="showAccount">{currentAccount}</span>
           </h2>
+          <div>NetworkType: {networkType}</div>
         </header>
       </div>
 
