@@ -2,12 +2,17 @@ import React, { useEffect, useState } from "react";
 import Web3 from "web3";
 import "./App.css";
 import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import { createDID } from "./createDid";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
   const [contract, setContract] = useState(null);
   const [networkType, setNetworkType] = useState(null);
   const [storageValue, setStorageValue] = useState(0);
+  const [did, setDid] = useState([]);
+
+  const privateKey =
+    "b7e2bf51463662888676e086fbadedc1b9a5a9a53f444d194cd485df163442c4";
 
   //Initializing web3 object
   let web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
@@ -33,17 +38,21 @@ function App() {
         .set(13)
         .send({ from: currentAccount })
         .then((value) => setStorageValue(value.transactionHash));
+
+      const newDID = createDID(currentAccount, web3.currenProvider);
+      console.log(newDID);
+      setDid(newDID.did);
     }
   }, [currentAccount, contract]);
 
   useEffect(() => {
     if (currentAccount && contract) {
       contract
-      .get()
-      .call({ from: currentAccount })
-      .then((value) => {
-        console.log(value);
-      });
+        .get()
+        .call({ from: currentAccount })
+        .then((value) => {
+          console.log(value);
+        });
     }
   }, [storageValue]);
 
@@ -78,6 +87,10 @@ function App() {
             Account: <span className="showAccount">{currentAccount}</span>
           </h2>
           <div>NetworkType: {networkType}</div>
+          <div>
+            <h2>Demo DID-created</h2>
+            <p>{did}</p>
+          </div>
         </header>
       </div>
 
